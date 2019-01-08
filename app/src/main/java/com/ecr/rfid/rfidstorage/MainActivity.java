@@ -14,26 +14,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.squareup.picasso.Picasso;
-
-import org.w3c.dom.Text;
-
-import java.net.URI;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,7 +45,8 @@ public class MainActivity extends AppCompatActivity {
         fireRealTime = FirebaseDatabase.getInstance().getReference();
 
         configureAddItemBtn();
-        configureSlotBtns();
+        loadSlotBtns();
+        configureSlotBtnListners();
     }
 
     private void configureAddItemBtn() {
@@ -64,11 +55,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this, AddItemActivity.class));
+                finish();
             }
         });
     }
 
-    private void configureSlotBtns() {
+    private void loadSlotBtns() {
         final ImageButton[] slotBtns = {
             findViewById(R.id.imageBtnSlot1),
             findViewById(R.id.imageBtnSlot2),
@@ -76,18 +68,11 @@ public class MainActivity extends AppCompatActivity {
             findViewById(R.id.imageBtnSlot4)
         };
 
-        final TextView[] slotTexts = {
-            findViewById(R.id.textViewSlot1),
-            findViewById(R.id.textViewSlot2),
-            findViewById(R.id.textViewSlot3),
-            findViewById(R.id.textViewSlot4)
-        };
-
         final DatabaseReference items = fireRealTime.child("items");
 
             items.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
-                public void onDataChange(final DataSnapshot dataSnapshot) {
+                public void onDataChange(DataSnapshot dataSnapshot) {
                     iterator = 0;
                     currentBtn = slotBtns[0];
                     for(DataSnapshot uniqueKeySnapshot : dataSnapshot.getChildren()){
@@ -102,37 +87,6 @@ public class MainActivity extends AppCompatActivity {
                             Picasso.get().load(downloadUri).rotate(90f).fit().centerCrop().into(currentBtn);
                         }
 
-                        currentBtn.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(final View v) {
-                                int currentPosition;
-                                switch (v.getId()) {
-                                    case R.id.imageBtnSlot1:
-                                        currentPosition = dataSnapshot.child(UUIDs[0]).child("storage position").getValue(Integer.class);
-                                        fireRealTime.child("rotation position").setValue(currentPosition);
-                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
-                                        break;
-                                    case R.id.imageBtnSlot2:
-                                        currentPosition = dataSnapshot.child(UUIDs[1]).child("storage position").getValue(Integer.class);
-                                        fireRealTime.child("rotation position").setValue(currentPosition);
-                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
-                                        break;
-                                    case R.id.imageBtnSlot3:
-                                        currentPosition = dataSnapshot.child(UUIDs[2]).child("storage position").getValue(Integer.class);
-                                        fireRealTime.child("rotation position").setValue(currentPosition);
-                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
-                                        break;
-                                    case R.id.imageBtnSlot4:
-                                        currentPosition = dataSnapshot.child(UUIDs[3]).child("storage position").getValue(Integer.class);
-                                        fireRealTime.child("rotation position").setValue(currentPosition);
-                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        });
-
                         iterator++;
                     }
 
@@ -144,6 +98,94 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             });
+
+    }
+
+    public void configureSlotBtnListners() {
+
+        final ImageButton[] slotBtns = {
+                findViewById(R.id.imageBtnSlot1),
+                findViewById(R.id.imageBtnSlot2),
+                findViewById(R.id.imageBtnSlot3),
+                findViewById(R.id.imageBtnSlot4)
+        };
+
+        final DatabaseReference items = fireRealTime.child("items");
+        for(int i = 0; i<slotBtns.length; i++) {
+            currentBtn = slotBtns[i];
+            currentBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(final View v) {
+                    items.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            int currentPosition;
+                            switch (v.getId()) {
+                                case R.id.imageBtnSlot1:
+                                    if(UUIDs[0] == null) {
+                                        toaster("No item.");
+                                    }
+                                    else if (dataSnapshot.child(UUIDs[0]).child("storage position").exists()) {
+                                        currentPosition = dataSnapshot.child(UUIDs[0]).child("storage position").getValue(Integer.class);
+                                        fireRealTime.child("rotation position").setValue(currentPosition);
+                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
+                                        finish();
+                                    } else {
+                                        toaster("Not stored.");
+                                    }
+                                    break;
+                                case R.id.imageBtnSlot2:
+                                    if(UUIDs[1] == null) {
+                                        toaster("No item.");
+                                    }
+                                    else if (dataSnapshot.child(UUIDs[1]).child("storage position").exists()) {
+                                        currentPosition = dataSnapshot.child(UUIDs[1]).child("storage position").getValue(Integer.class);
+                                        fireRealTime.child("rotation position").setValue(currentPosition);
+                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
+                                        finish();
+                                    } else {
+                                        toaster("Not stored.");
+                                    }
+                                    break;
+                                case R.id.imageBtnSlot3:
+                                    if(UUIDs[2] == null) {
+                                        toaster("No item.");
+                                    }
+                                    else if (dataSnapshot.child(UUIDs[2]).child("storage position").exists()) {
+                                        currentPosition = dataSnapshot.child(UUIDs[2]).child("storage position").getValue(Integer.class);
+                                        fireRealTime.child("rotation position").setValue(currentPosition);
+                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
+                                        finish();
+                                    } else {
+                                        toaster("Not stored.");
+                                    }
+                                    break;
+                                case R.id.imageBtnSlot4:
+                                    if(UUIDs[3] == null) {
+                                        toaster("No item.");
+                                    }
+                                    else if (dataSnapshot.child(UUIDs[3]).child("storage position").exists()) {
+                                        currentPosition = dataSnapshot.child(UUIDs[3]).child("storage position").getValue(Integer.class);
+                                        fireRealTime.child("rotation position").setValue(currentPosition);
+                                        startActivity(new Intent(MainActivity.this, RemoveItemActivity.class));
+                                        finish();
+                                    } else {
+                                        toaster("Not stored.");
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        }
+                    });
+                }
+            });
+        }
 
     }
 
